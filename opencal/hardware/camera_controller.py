@@ -30,7 +30,7 @@ class CameraController:
         self.fps = 20
         self.recording = False
 
-        self._focus_diopters: float = 33.3  # 30mm focal distance
+        self._focus_diopters: float = 9.0  # ~111mm focal distance
         self._awb_enable: bool = config.awb_enable
         self._colour_gains: tuple[float, float] = config.colour_gains
 
@@ -109,7 +109,9 @@ class CameraController:
             return
         if self.picam.started:
             self.picam.stop()
-        self.picam.configure(self.picam.create_video_configuration())
+        video_config = self.picam.create_video_configuration(main={"size": (1920, 1080)})
+        video_config["controls"]["AfMode"] = controls.AfModeEnum.Manual
+        self.picam.configure(video_config)
         encoder = H264Encoder()
         self.picam.start_recording(encoder=encoder, output=str(file))
         time.sleep(0.5)  # wait for pipeline to fully initialize before locking controls
