@@ -35,7 +35,7 @@ class CameraController:
             self.still_config = self.picam.create_still_configuration(buffer_count=2)
             self.video_config = self.picam.create_video_configuration()
             self.picam.configure(self.still_config)
-            self.set_focus(15)
+            self.set_focus(33.3)  # 30mm focal distance
         except Exception as e:
             self.picam = None
             print("WARNING: No camera connected, camera functionality disabled.")
