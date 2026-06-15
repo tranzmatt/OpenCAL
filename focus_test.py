@@ -141,12 +141,41 @@ def strategy_5():
     print(f"  Saved clip to {out}")
 
 
+# ---------------------------------------------------------------------------
+# Strategy 6: embed controls in config dict before configure() — IPA starts in manual
+# ---------------------------------------------------------------------------
+def strategy_6():
+    print("\n[Strategy 6] Controls embedded in config dict before configure()")
+    cam = Picamera2()
+    config = cam.create_video_configuration(main={"size": (1920, 1080)})
+    config["controls"]["AfMode"] = controls.AfModeEnum.Manual
+    config["controls"]["LensPosition"] = TARGET_DIOPTERS
+    cam.configure(config)
+    cam.start()
+    time.sleep(1.0)
+    read_lens(cam, "after start")
+    cam.stop()
+    cam.close()
+
+
+# ---------------------------------------------------------------------------
+# Strategy 7: call set_controls BEFORE cam.start() — queued as startup controls
+# ---------------------------------------------------------------------------
+def strategy_7():
+    print("\n[Strategy 7] set_controls before cam.start()")
+    cam = Picamera2()
+    cam.configure(cam.create_video_configuration(main={"size": (1920, 1080)}))
+    cam.set_controls({"AfMode": controls.AfModeEnum.Manual, "LensPosition": TARGET_DIOPTERS})
+    cam.start()
+    time.sleep(1.0)
+    read_lens(cam, "after start")
+    cam.stop()
+    cam.close()
+
+
 if __name__ == "__main__":
     print(f"Testing manual focus in video mode. Target: {TARGET_DIOPTERS} diopters (30mm)")
     print("LensPosition should read ~33.33 if controls are being applied.\n")
-    strategy_5()  # most promising — run this first
-    strategy_1()
-    strategy_2()
-    strategy_3()
-    strategy_4()
+    strategy_6()
+    strategy_7()
     print("\nDone.")
