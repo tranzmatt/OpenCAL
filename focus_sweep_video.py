@@ -61,12 +61,11 @@ def main():
         path = save_dir / filename
 
         cam = Picamera2()
-
-        # Use still config for recording — avoids sensor mode switch that resets lens
-        cam.configure(cam.create_still_configuration())
+        cam.configure(cam.create_video_configuration())
         cam.start()
         time.sleep(0.5)
 
+        # Set focus and WB while camera is running but not yet recording
         cam.set_controls({"AfMode": controls.AfModeEnum.Manual, "LensPosition": diopters})
         if AWB_ENABLE:
             cam.set_controls({"AwbEnable": True})
@@ -74,6 +73,7 @@ def main():
             cam.set_controls({"AwbEnable": False, "ColourGains": COLOUR_GAINS})
         time.sleep(SETTLE_TIME)  # let lens physically move before recording starts
 
+        # Start encoder on already-running camera — lens stays in position
         cam.start_recording(H264Encoder(), output=str(path))
         time.sleep(CLIP_DURATION)
 
