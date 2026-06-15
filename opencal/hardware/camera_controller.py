@@ -103,16 +103,26 @@ class CameraController:
             return
         self.picam.set_controls({"AfMode": controls.AfModeEnum.Continuous})
 
+    def _build_controls(self) -> dict:
+        """Build the controls dict to embed in camera configurations."""
+        c: dict = {"AfMode": controls.AfModeEnum.Manual, "LensPosition": self._focus_diopters}
+        if self._awb_enable:
+            c["AwbEnable"] = True
+        else:
+            c["AwbEnable"] = False
+            c["ColourGains"] = self._colour_gains
+        return c
+
     def start_recording(self, file: Path):
         if not self.picam:
             print("WARNING: No camera connected, cannot start camera.")
             return
         if self.picam.started:
             self.picam.stop()
-        self.picam.configure(self.picam.create_video_configuration())
+        video_config = self.picam.create_video_configuration(controls=self._build_controls())
+        self.picam.configure(video_config)
         encoder = H264Encoder()
         self.picam.start_recording(encoder=encoder, output=str(file))
-        self._apply_controls()
         print("DEBUG: starting recording")
         self._recording = True
 
