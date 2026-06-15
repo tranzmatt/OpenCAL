@@ -27,7 +27,9 @@
   "camera": {
     "type": "rpi",
     "index": 0,
-    "save_path": "/home/opencal/opencal/OpenCAL/utils/prints"
+    "save_path": "/home/opencal/opencal/OpenCAL/utils/prints",
+    "awb_enable": false,
+    "colour_gains": [2.0, 1.8]
   },
   "led_array": {
     "num_led": 64,

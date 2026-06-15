@@ -88,6 +88,9 @@ class CameraConfig:
         self.type: str = config["type"]
         self.index: int = config["index"]
         self.save_path: str = config["save_path"]
+        self.awb_enable: bool = config.get("awb_enable", True)
+        gains = config.get("colour_gains", [2.0, 1.8])
+        self.colour_gains: tuple[float, float] = (gains[0], gains[1])
 
 
 class LedArrayConfig:

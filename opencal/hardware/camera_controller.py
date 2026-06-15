@@ -30,12 +30,15 @@ class CameraController:
         self.fps = 20
         self.recording = False
 
+        self._focus_diopters: float = 33.3  # 30mm focal distance
+        self._awb_enable: bool = config.awb_enable
+        self._colour_gains: tuple[float, float] = config.colour_gains
+
         try:
             self.picam = Picamera2()
             self.still_config = self.picam.create_still_configuration(buffer_count=2)
             self.video_config = self.picam.create_video_configuration()
             self.picam.configure(self.still_config)
-            self.set_focus(33.3)  # 30mm focal distance
         except Exception as e:
             self.picam = None
             print("WARNING: No camera connected, camera functionality disabled.")
@@ -58,6 +61,7 @@ class CameraController:
             # self.picam.start_preview(Preview.QT)
 
         self.picam.start()
+        self._apply_controls()
 
     def capture_image(self, save_path: Path | None = None) -> bool:
         if not self.picam:
@@ -77,11 +81,20 @@ class CameraController:
             print(f"ERROR: Image capture failed: {e}")
             return False
 
+    def _apply_controls(self):
+        """Apply focus and white balance after every camera start/reconfigure."""
+        self.picam.set_controls({"AfMode": controls.AfModeEnum.Manual, "LensPosition": self._focus_diopters})
+        if self._awb_enable:
+            self.picam.set_controls({"AwbEnable": True})
+        else:
+            self.picam.set_controls({"AwbEnable": False, "ColourGains": self._colour_gains})
+
     def set_focus(self, diopters: float):
         """Turns off autofocus and sets a manual focal distance in diopters (m^-1)"""
         if not self.picam:
             print("WARNING: No camera connected, cannot start camera.")
             return
+        self._focus_diopters = diopters
         self.picam.set_controls({"AfMode": controls.AfModeEnum.Manual, "LensPosition": diopters})
 
     def activate_autofocus(self):
@@ -99,6 +112,7 @@ class CameraController:
         self.picam.configure(self.picam.create_video_configuration())
         encoder = H264Encoder()
         self.picam.start_recording(encoder=encoder, output=str(file))
+        self._apply_controls()
         print("DEBUG: starting recording")
         self._recording = True
 
