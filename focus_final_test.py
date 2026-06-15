@@ -13,7 +13,7 @@ from picamera2.encoders import H264Encoder
 from libcamera import controls
 
 PHOTO_DIOPTERS = 10.0   # ~100mm — best from still sweep
-VIDEO_DIOPTERS = 9.0    # ~111mm — best from video sweep
+VIDEO_DIOPTERS = [9.0, 10.0]  # ~111mm and ~100mm — compare both
 COLOUR_GAINS   = (2.0, 1.8)
 
 
