@@ -70,7 +70,7 @@ def main():
         cam.set_controls({"AfMode": controls.AfModeEnum.Manual, "LensPosition": diopters})
         time.sleep(SETTLE_TIME)
 
-        filename = f"focus_{mm:04d}mm_{diopters:.2f}diopters.jpeg"
+        filename = f"focus_{mm:05.1f}mm_{diopters:.2f}diopters.jpeg"
         path = save_dir / filename
         cam.capture_file(str(path))
         print(f"  [{distances.index(mm) + 1}/{len(distances)}] {filename}")
