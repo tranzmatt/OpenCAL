@@ -61,7 +61,7 @@ def main():
         path = save_dir / filename
 
         cam = Picamera2()
-        cam.configure(cam.create_video_configuration())
+        cam.configure(cam.create_video_configuration(main={"size": (2304, 1296)}))
         cam.start()
         time.sleep(0.5)
 
