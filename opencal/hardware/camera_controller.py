@@ -30,7 +30,7 @@ class CameraController:
         self.fps = 20
         self.recording = False
 
-        self._focus_diopters: float = 9.0  # ~111mm focal distance
+        self._focus_diopters: float = 9.5  # ~105mm focal distance
         self._awb_enable: bool = config.awb_enable
         self._colour_gains: tuple[float, float] = config.colour_gains
 
