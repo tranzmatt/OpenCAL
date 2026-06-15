@@ -3,6 +3,8 @@
 focus_sweep_video.py — Record short video clips at multiple focal distances.
 Saves labeled .h264 clips to USB under a focus_sweep_video/ folder.
 
+LensPosition range for Pi Camera Module 3: 0.0 (infinity) to 15.0 (~67mm)
+
 Usage:
     python3 focus_sweep_video.py
 """
@@ -14,18 +16,14 @@ from picamera2.encoders import H264Encoder
 from libcamera import controls
 
 # --- Configuration ---
-FOCUS_START_MM = 30.0
-FOCUS_END_MM   = 50.0
-FOCUS_STEP_MM  = 2.5
-CLIP_DURATION  = 2.0   # seconds per clip
-SETTLE_TIME    = 1.0   # seconds to wait after setting focus before recording
-AWB_ENABLE     = False
-COLOUR_GAINS   = (2.0, 1.8)  # matches config.json
+DIOPTER_START = 1.0   # near infinity (~1000mm)
+DIOPTER_END   = 15.0  # closest focus (~67mm)
+DIOPTER_STEP  = 1.0
+CLIP_DURATION = 2.0   # seconds per clip
+SETTLE_TIME   = 1.5   # seconds to wait after setting focus before recording
+AWB_ENABLE    = False
+COLOUR_GAINS  = (2.0, 1.8)  # matches config.json
 # ---------------------
-
-
-def mm_to_diopters(mm: float) -> float:
-    return 1000.0 / mm
 
 
 def find_usb() -> Path | None:
@@ -47,51 +45,43 @@ def main():
     save_dir.mkdir(exist_ok=True)
     print(f"Saving clips to: {save_dir}")
 
-    mm = FOCUS_START_MM
-    distances = []
-    while mm <= FOCUS_END_MM + 1e-9:
-        distances.append(round(mm, 2))
-        mm += FOCUS_STEP_MM
+    d = DIOPTER_START
+    diopters_list = []
+    while d <= DIOPTER_END + 1e-9:
+        diopters_list.append(round(d, 2))
+        d += DIOPTER_STEP
 
-    print(f"Recording {len(distances)} clips ({FOCUS_START_MM}mm to {FOCUS_END_MM}mm, every {FOCUS_STEP_MM}mm)...")
+    print(f"Recording {len(diopters_list)} clips ({DIOPTER_START} to {DIOPTER_END} diopters, step {DIOPTER_STEP})...")
 
-    for i, mm in enumerate(distances):
-        diopters = mm_to_diopters(mm)
-        filename = f"focus_{mm:05.1f}mm_{diopters:.2f}diopters.h264"
+    for i, diopters in enumerate(diopters_list):
+        mm = 1000.0 / diopters if diopters > 0 else 9999
+        filename = f"focus_{diopters:05.2f}diopters_{mm:.0f}mm.h264"
         path = save_dir / filename
 
         cam = Picamera2()
-        cam.configure(cam.create_video_configuration(
-            main={"size": (1920, 1080)},
-            raw={"size": (4608, 2592)},  # full res sensor mode — required for PDAF focus control
-        ))
+        config = cam.create_video_configuration(main={"size": (1920, 1080)})
+        config["controls"]["AfMode"] = controls.AfModeEnum.Manual
+        cam.configure(config)
         cam.start()
         time.sleep(0.5)
 
-        # Set focus and WB while camera is running but not yet recording
-        cam.set_controls({"AfMode": controls.AfModeEnum.Manual, "LensPosition": diopters})
+        cam.set_controls({"LensPosition": diopters})
         if AWB_ENABLE:
             cam.set_controls({"AwbEnable": True})
         else:
             cam.set_controls({"AwbEnable": False, "ColourGains": COLOUR_GAINS})
-        time.sleep(SETTLE_TIME)  # let lens physically move before recording starts
+        time.sleep(SETTLE_TIME)
 
-        # Check what the camera actually reports before recording
-        metadata = cam.capture_metadata()
-        actual_lens = metadata.get("LensPosition", "N/A")
-        actual_af   = metadata.get("AfMode", "N/A")
-        print(f"  [{i + 1}/{len(distances)}] target={diopters:.2f} diopters | actual LensPosition={actual_lens} AfMode={actual_af}")
-
-        # Start encoder on already-running camera — lens stays in position
+        meta = cam.capture_metadata()
+        actual = meta.get("LensPosition", "N/A")
         cam.start_recording(H264Encoder(), output=str(path))
         time.sleep(CLIP_DURATION)
-
         cam.stop_recording()
         cam.close()
-        print(f"             saved: {filename}")
+        print(f"  [{i + 1}/{len(diopters_list)}] {diopters:.2f} diopters (~{mm:.0f}mm) | actual={actual} | {filename}")
 
-    print(f"\nDone! {len(distances)} clips saved to {save_dir}")
-    print("Convert to mp4 for playback:  ffmpeg -i clip.h264 -c copy clip.mp4")
+    print(f"\nDone! {len(diopters_list)} clips saved to {save_dir}")
+    print("Convert to mp4:  ffmpeg -i clip.h264 -c copy clip.mp4")
 
 
 if __name__ == "__main__":
