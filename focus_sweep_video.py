@@ -47,11 +47,6 @@ def main():
     save_dir.mkdir(exist_ok=True)
     print(f"Saving clips to: {save_dir}")
 
-    cam = Picamera2()
-    video_config = cam.create_video_configuration()
-    cam.configure(video_config)
-    encoder = H264Encoder()
-
     mm = FOCUS_START_MM
     distances = []
     while mm <= FOCUS_END_MM + 1e-9:
@@ -65,20 +60,22 @@ def main():
         filename = f"focus_{mm:05.1f}mm_{diopters:.2f}diopters.h264"
         path = save_dir / filename
 
-        cam.start_recording(encoder=encoder, output=str(path))
+        cam = Picamera2()
+        cam.configure(cam.create_video_configuration())
+        cam.start_recording(H264Encoder(), output=str(path))
         time.sleep(0.5)  # let pipeline initialize
 
-        # Lock focus and white balance
         cam.set_controls({"AfMode": controls.AfModeEnum.Manual, "LensPosition": diopters})
         if AWB_ENABLE:
             cam.set_controls({"AwbEnable": True})
         else:
             cam.set_controls({"AwbEnable": False, "ColourGains": COLOUR_GAINS})
 
-        time.sleep(SETTLE_TIME)  # let lens settle before recording counts
+        time.sleep(SETTLE_TIME)  # let lens settle
         time.sleep(CLIP_DURATION)
 
         cam.stop_recording()
+        cam.close()
         print(f"  [{i + 1}/{len(distances)}] {filename}")
 
     print(f"\nDone! {len(distances)} clips saved to {save_dir}")
