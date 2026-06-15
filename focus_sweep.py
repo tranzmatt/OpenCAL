@@ -13,10 +13,12 @@ from picamera2 import Picamera2
 from libcamera import controls
 
 # --- Configuration ---
-FOCUS_START_MM = 30    # nearest focal distance to test (mm)
-FOCUS_END_MM   = 100   # farthest focal distance to test (mm)
-FOCUS_STEP_MM  = 5     # step size (mm)
+FOCUS_START_MM = 30.0  # nearest focal distance to test (mm)
+FOCUS_END_MM   = 50.0  # farthest focal distance to test (mm)
+FOCUS_STEP_MM  = 2.5   # step size (mm)
 SETTLE_TIME    = 1.0   # seconds to wait after focusing before capture
+AWB_ENABLE     = False
+COLOUR_GAINS   = (2.0, 1.8)  # (red_gain, blue_gain) — matches config.json
 # ---------------------
 
 
@@ -49,7 +51,18 @@ def main():
     cam.start()
     time.sleep(1.0)  # warm up
 
-    distances = list(range(FOCUS_START_MM, FOCUS_END_MM + 1, FOCUS_STEP_MM))
+    # Apply white balance matching config.json settings
+    if AWB_ENABLE:
+        cam.set_controls({"AwbEnable": True})
+    else:
+        cam.set_controls({"AwbEnable": False, "ColourGains": COLOUR_GAINS})
+
+    mm = FOCUS_START_MM
+    distances = []
+    while mm <= FOCUS_END_MM + 1e-9:
+        distances.append(round(mm, 2))
+        mm += FOCUS_STEP_MM
+
     print(f"Capturing {len(distances)} images ({FOCUS_START_MM}mm to {FOCUS_END_MM}mm, every {FOCUS_STEP_MM}mm)...")
 
     for mm in distances:
