@@ -73,13 +73,19 @@ def main():
             cam.set_controls({"AwbEnable": False, "ColourGains": COLOUR_GAINS})
         time.sleep(SETTLE_TIME)  # let lens physically move before recording starts
 
+        # Check what the camera actually reports before recording
+        metadata = cam.capture_metadata()
+        actual_lens = metadata.get("LensPosition", "N/A")
+        actual_af   = metadata.get("AfMode", "N/A")
+        print(f"  [{i + 1}/{len(distances)}] target={diopters:.2f} diopters | actual LensPosition={actual_lens} AfMode={actual_af}")
+
         # Start encoder on already-running camera — lens stays in position
         cam.start_recording(H264Encoder(), output=str(path))
         time.sleep(CLIP_DURATION)
 
         cam.stop_recording()
         cam.close()
-        print(f"  [{i + 1}/{len(distances)}] {filename}")
+        print(f"             saved: {filename}")
 
     print(f"\nDone! {len(distances)} clips saved to {save_dir}")
     print("Convert to mp4 for playback:  ffmpeg -i clip.h264 -c copy clip.mp4")
