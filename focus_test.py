@@ -204,8 +204,34 @@ def strategy_8():
     print(f"  Saved clip to {out} — compare focus visually against default (15 diopters / 67mm)")
 
 
+def check_range():
+    print("\n[Range Check - Video] Valid LensPosition range in video mode")
+    cam = Picamera2()
+    config = cam.create_video_configuration()
+    config["controls"]["AfMode"] = controls.AfModeEnum.Manual
+    cam.configure(config)
+    cam.start()
+    lp_range = cam.camera_controls.get("LensPosition")
+    meta = cam.capture_metadata()
+    print(f"  LensPosition range: {lp_range}  (min, max, default)")
+    print(f"  Current LensPosition: {meta.get('LensPosition', 'N/A')}")
+    cam.stop()
+    cam.close()
+
+    print("\n[Range Check - Still] Valid LensPosition range in still mode")
+    cam = Picamera2()
+    config = cam.create_still_configuration()
+    config["controls"]["AfMode"] = controls.AfModeEnum.Manual
+    cam.configure(config)
+    cam.start()
+    lp_range = cam.camera_controls.get("LensPosition")
+    meta = cam.capture_metadata()
+    print(f"  LensPosition range: {lp_range}  (min, max, default)")
+    print(f"  Current LensPosition: {meta.get('LensPosition', 'N/A')}")
+    cam.stop()
+    cam.close()
+
+
 if __name__ == "__main__":
-    print(f"Testing manual focus in video mode. Target: {TARGET_DIOPTERS} diopters (30mm)")
-    print("LensPosition should read ~33.33 if controls are being applied.\n")
-    strategy_8()
+    check_range()
     print("\nDone.")
