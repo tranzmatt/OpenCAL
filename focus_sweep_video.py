@@ -61,17 +61,23 @@ def main():
         path = save_dir / filename
 
         cam = Picamera2()
+
+        # Move the lens to the target position in still mode first
+        cam.configure(cam.create_still_configuration())
+        cam.start()
+        cam.set_controls({"AfMode": controls.AfModeEnum.Manual, "LensPosition": diopters})
+        time.sleep(SETTLE_TIME)  # wait for lens to physically move
+        cam.stop()
+
+        # Switch to video and record with lens already at position
         cam.configure(cam.create_video_configuration())
         cam.start_recording(H264Encoder(), output=str(path))
-        time.sleep(0.5)  # let pipeline initialize
-
         cam.set_controls({"AfMode": controls.AfModeEnum.Manual, "LensPosition": diopters})
         if AWB_ENABLE:
             cam.set_controls({"AwbEnable": True})
         else:
             cam.set_controls({"AwbEnable": False, "ColourGains": COLOUR_GAINS})
 
-        time.sleep(SETTLE_TIME)  # let lens settle
         time.sleep(CLIP_DURATION)
 
         cam.stop_recording()
