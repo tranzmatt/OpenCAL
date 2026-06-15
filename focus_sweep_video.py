@@ -61,7 +61,10 @@ def main():
         path = save_dir / filename
 
         cam = Picamera2()
-        cam.configure(cam.create_video_configuration(main={"size": (2304, 1296)}))
+        cam.configure(cam.create_video_configuration(
+            main={"size": (1920, 1080)},
+            raw={"size": (4608, 2592)},  # full res sensor mode — required for PDAF focus control
+        ))
         cam.start()
         time.sleep(0.5)
 
